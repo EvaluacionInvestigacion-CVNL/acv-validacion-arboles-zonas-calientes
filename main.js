@@ -119,19 +119,20 @@ var puntos = puntosCSV.map(function(feature) {
 var clasificacionTemp = classifiedTemps.mosaic().rename('class');
 
 // 3. CLASIFICAR LOS PUNTOS
-var puntosClasificados = clasificacionTemp.sampleRegions({
+// Usamos unmask(-1) para conservar los puntos que caen fuera de la zona
+// urbanizada (el mapa de calor sólo cubre áreas urbanizadas). Esos puntos
+// quedarán en el output con 'class' nulo (sin clasificar).
+var puntosClasificados = clasificacionTemp.unmask(-1).sampleRegions({
   collection: puntos,
   scale: 30,
   geometries: true
 }).map(function(f) {
-  return f.copyProperties(f);
+  var cls = ee.Number(f.get('class'));
+  return f.set('class', ee.Algorithms.If(cls.eq(-1), null, cls));
 }).select([
   'municipio', 'periodo', 'ano', 'mes',
   'cantidad', 'suelo', 'lat', 'lon', 'class'
 ]);
-
-// 4. FILTRAR SOLO PUNTOS CON CLASIFICACIÓN VÁLIDA
-puntosClasificados = puntosClasificados.filter(ee.Filter.notNull(['class']));
 
 // 5. EXPORTAR RESULTADO A CSV
 Export.table.toDrive({
