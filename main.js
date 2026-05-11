@@ -112,7 +112,10 @@ var puntos = puntosCSV.map(function(feature) {
   var lon = ee.Number(feature.get('lon'));
   var lat = ee.Number(feature.get('lat'));
   var point = ee.Geometry.Point([lon, lat]);
-  return feature.setGeometry(point);
+  var uid = ee.String(feature.get('id'))
+    .cat('_')
+    .cat(ee.String(feature.get('periodo')));
+  return feature.setGeometry(point).set('system:index', uid);
 });
 
 // 2. USAR LA CLASIFICACIÓN FINAL COMO MOSAICO
@@ -130,7 +133,7 @@ var puntosClasificados = clasificacionTemp.unmask(-1).sampleRegions({
   var cls = ee.Number(f.get('class'));
   return f.set('class', ee.Algorithms.If(cls.eq(-1), null, cls));
 }).select([
-  'municipio', 'periodo', 'ano', 'mes',
+  'id', 'municipio', 'periodo', 'ano', 'mes',
   'cantidad', 'suelo', 'lat', 'lon', 'class'
 ]);
 
